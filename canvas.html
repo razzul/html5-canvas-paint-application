@@ -2,7 +2,6 @@
 <html>
 <head>
     <title>html5-canvas-paint-application</title>
-    <meta property="og:image" content="https://raw.githubusercontent.com/razzul/html5-canvas-paint-application/master/razzul-html5-canvas-paint-application.png" />
     <style>
     body {
         padding: 0;
@@ -11,9 +10,9 @@
     #canvas {
         width: 50%;
         height: 300px;
-        background: #000;
         margin: 75px auto;
         cursor: crosshair;
+        border: 1px dashed #f56;
     }
     .tools {
         width: 50%;
@@ -33,9 +32,8 @@
     }
     </style>
 </head>
-<body itemscope itemtype="http://schema.org/Product">
-    <img style="display:none" itemprop="image" src="https://raw.githubusercontent.com/razzul/html5-canvas-paint-application/master/razzul-html5-canvas-paint-application.png" />
-
+<body>
+    
     <div id="canvas" class="mycanvas">
         <canvas id="scratch_pad_canvas"></canvas>
     </div>
@@ -46,7 +44,7 @@
         <a href='#scratch_pad_canvas' data-color='#2196F3' style='background:#2196F3;'></a>
         <a href='#scratch_pad_canvas' data-color='#00BCD4' style='background:#00BCD4;'></a>
         <a href='#scratch_pad_canvas' data-color='#8BC34A' style='background:#8BC34A;'></a>
-        <a href='#scratch_pad_canvas' data-color='#fff' style='background:#fff;'></a>
+        <a href='#scratch_pad_canvas' data-color='#000000' style='background:#000000;'></a>
         <a href='#scratch_pad_canvas' data-color='#00CC99' style='background:#00CC99;'></a>
         <a href='#scratch_pad_canvas' data-color='#f56' style='background:#f56;'></a>
         <a href='#scratch_pad_canvas' data-color='#CDDC39' style='background:#CDDC39;'></a>
