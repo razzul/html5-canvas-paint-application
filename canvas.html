@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CANVAS</title>
+    <style>
+    body {
+        padding: 0;
+        margin: 0;
+    }
+    #canvas {
+        width: 50%;
+        height: 300px;
+        background: #000;
+        margin: 75px auto;
+    }
+    .tools {
+        width: 50%;
+        margin: 20px auto;
+        text-align: center;
+    }
+    .tools a {
+        border: 1px solid black;
+        line-height: 30px;
+        padding:10px;
+        vertical-align: middle;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        color: black;
+        font-weight: bold;
+    }
+    </style>
+</head>
+<body>
+    <div id="canvas" class="mycanvas">
+        <canvas id="scratch_pad_canvas"></canvas>
+    </div>
+    <div class="tools">
+        <a href='#scratch_pad_canvas' data-color='#F44336' style='background:#F44336;'></a>
+        <a href='#scratch_pad_canvas' data-color='#9C27B0' style='background:#9C27B0;'></a>
+        <a href='#scratch_pad_canvas' data-color='#673AB7' style='background:#673AB7;'></a>
+        <a href='#scratch_pad_canvas' data-color='#2196F3' style='background:#2196F3;'></a>
+        <a href='#scratch_pad_canvas' data-color='#00BCD4' style='background:#00BCD4;'></a>
+        <a href='#scratch_pad_canvas' data-color='#8BC34A' style='background:#8BC34A;'></a>
+        <a href='#scratch_pad_canvas' data-color='#fff' style='background:#fff;'></a>
+        <a href='#scratch_pad_canvas' data-color='#00CC99' style='background:#00CC99;'></a>
+        <a href='#scratch_pad_canvas' data-color='#f56' style='background:#f56;'></a>
+        <a href='#scratch_pad_canvas' data-color='#CDDC39' style='background:#CDDC39;'></a>
+        <a href='#scratch_pad_canvas' data-color='#FFEB3B' style='background:#FFEB3B;'></a>
+        <a href='#scratch_pad_canvas' data-color='#FFC107' style='background:#FFC107;'></a>
+    </div>
+    <div class="tools">
+        <a href='#scratch_pad_canvas' data-size='3' style='background:#00CC99;padding:3px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='5' style='background:#00CC99;padding:5px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='10' style='background:#00CC99;padding:10px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='15' style='background:#00CC99;padding:15px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='10' style='background:#00CC99;padding:10px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='5' style='background:#00CC99;padding:5px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='3' style='background:#00CC99;padding:3px;border-radius: 50%;'></a>
+    </div>
+    <div class="tools">
+        <a href='#scratch_pad_canvas' data-tool='download' style='border: none;padding: 1px 8px;'>download</a>
+        <a href='#scratch_pad_canvas' data-tool='undo' style='border: none;padding: 1px 8px;'>undo</a>
+        <a href='#scratch_pad_canvas' data-tool='redo' style='border: none;padding: 1px 8px;'>redo</a>
+    </div>
+    <script   src="https://code.jquery.com/jquery-1.12.3.min.js"   integrity="sha256-aaODHAgvwQW1bFOGXMeX+pC4PZIPsvn2h1sArYOhgXQ="   crossorigin="anonymous"></script>
+    <script>
+        var mycanvas = document.getElementById('canvas');
+        var mycanvas_style = getComputedStyle(mycanvas);
+
+        var canvas = document.getElementById('scratch_pad_canvas');
+        var ctx = canvas.getContext('2d');
+        canvas.width = parseInt(mycanvas_style.getPropertyValue('width'));
+        canvas.height = parseInt(mycanvas_style.getPropertyValue('height'));
+
+        var canData = [];
+        var canDataCount = 0;
+        var mouse = {x:0, y:0};
+        var size = 3;
+        var lineJoin = 'round';
+        var lineCap = 'round';
+        var color = '#00CC99';
+        var paintArray = [];
+        var undoData;
+        var oldData;
+
+        canvas.addEventListener('mousemove', function(e){
+            mouse.x = e.pageX - $('canvas').offset().left;
+            mouse.y = e.pageY - $('canvas').offset().top;
+        }, false);
+
+        canvas.addEventListener('mousedown', function(e) {
+            ctx.beginPath();
+            ctx.moveTo(mouse.x, mouse.y);
+            paintArray = [];
+            canvas.addEventListener('mousemove', paint, false);
+        }, false);
+
+        canvas.addEventListener('mouseup', function(e) {
+            canvas.removeEventListener('mousemove', paint, false);
+            canData[canDataCount] = paintArray;
+            undoData = canData;
+            oldData = canData;
+            canDataCount++;
+        }, false);
+
+        var paint = function() {
+            ctx.lineWidth = size;
+            ctx.lineJoin = lineJoin;
+            ctx.lineCap = lineCap;
+            ctx.strokeStyle = color;
+
+            ctx.lineTo(mouse.x, mouse.y);
+            paintArray.push({x: mouse.x, y: mouse.y, size: size, color:color});
+            ctx.stroke();
+        };
+
+        var download = function() {
+            var mime,format;
+            format || (format = "png");
+            if (format === "jpg") {
+                format = "jpeg";
+            }
+            mime = "image/" + format;
+            return window.open(canvas.toDataURL(mime));
+        };
+
+
+        var undo = function() {
+            if(canData.length > 0) {
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                canData = canData.slice(0, -1);
+                undoData = undoData.slice(0, -1);
+                canDataCount--;
+
+                for(var i=0;i<undoData.length;i++){
+                    ctx.beginPath();
+                    ctx.lineJoin = lineJoin;
+                    ctx.lineCap = lineCap;
+                    $.each(undoData[i], function(index,element) {
+                        ctx.lineWidth = element.size;
+                        ctx.strokeStyle = element.color;
+                        ctx.lineTo(element.x, element.y);
+                    });
+                    ctx.stroke();
+                }
+            }
+        };
+
+        var redo = function() {
+            if(oldData.length > canData.length) {
+                var _canDataLength = canData.length;
+                var _oldData = oldData[_canDataLength];
+
+                ctx.beginPath();
+                ctx.lineJoin = lineJoin;
+                ctx.lineCap = lineCap;
+                $.each(_oldData, function(index,element) {
+                    ctx.lineWidth = element.size;
+                    ctx.strokeStyle = element.color;
+                    ctx.lineTo(element.x, element.y);
+                });
+                ctx.stroke();
+
+                canData[canDataCount] = _oldData;
+                undoData = canData;
+                canDataCount++;
+            }
+        };
+
+        $('body').delegate("a[href=\"#" + ($('canvas').attr('id')) + "\"]", 'click', function(e) {
+            event.preventDefault();
+            $this = $(this);
+            _ref = ['color', 'size', 'tool'];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                key = _ref[_i];
+                if ($this.attr("data-" + key)) {
+                    if(key == 'size') size = $(this).attr("data-" + key);
+                    else if(key == 'color') {
+                        color = $(this).attr("data-" + key);
+                        $('[data-size]').css({'background':color});
+                    } else if(key == 'tool') {
+                        if($(this).attr("data-" + key) == 'download')  download();
+                        else if($(this).attr("data-" + key) == 'undo')  undo();
+                        else if($(this).attr("data-" + key) == 'redo')  redo();
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
