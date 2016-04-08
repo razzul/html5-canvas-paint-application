@@ -70,6 +70,7 @@
         <a href='#scratch_pad_canvas' data-tool='download' style='border: none;padding: 1px 8px;'>download</a>
         <a href='#scratch_pad_canvas' data-tool='undo' style='border: none;padding: 1px 8px;'>undo</a>
         <a href='#scratch_pad_canvas' data-tool='redo' style='border: none;padding: 1px 8px;'>redo</a>
+        <a href='#scratch_pad_canvas' data-tool='clean' style='border: none;padding: 1px 8px;'>clean</a>
     </div>
     <script   src="https://code.jquery.com/jquery-1.12.3.min.js"   integrity="sha256-aaODHAgvwQW1bFOGXMeX+pC4PZIPsvn2h1sArYOhgXQ="   crossorigin="anonymous"></script>
     <script>
@@ -176,6 +177,13 @@
             }
         };
 
+        var clean = function() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            canDataCount = 0;
+            canData = [];
+            undoData = canData;
+        };
+
         $('body').delegate("a[href=\"#" + ($('canvas').attr('id')) + "\"]", 'click', function(e) {
             event.preventDefault();
             $this = $(this);
@@ -191,6 +199,7 @@
                         if($(this).attr("data-" + key) == 'download')  download();
                         else if($(this).attr("data-" + key) == 'undo')  undo();
                         else if($(this).attr("data-" + key) == 'redo')  redo();
+                        else if($(this).attr("data-" + key) == 'clean')  clean();
                     }
                 }
             }
@@ -198,10 +207,10 @@
 
         function KeyPress(e) {
             var evtobj = window.event? event : e;
-            console.log(evtobj.keyCode)
             if (evtobj.keyCode == 90 && evtobj.ctrlKey) undo();
             if (evtobj.keyCode == 89 && evtobj.ctrlKey) redo();
             if (evtobj.keyCode == 83 && evtobj.ctrlKey) download();
+            if (evtobj.keyCode == 46) clean();
         }
 
         document.onkeydown = KeyPress;
