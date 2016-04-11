@@ -19,6 +19,7 @@
         margin: 75px auto;
         cursor: crosshair;
         border: 1px dashed #f56;
+        background: url(blueprint-dark.png);
     }
     .tools {
         width: 50%;
@@ -39,7 +40,7 @@
     </style>
 </head>
 <body>
-    <span class="hint">undo:CTRL+z | redo:CTRL+y | download:CTRL+s | clean:delete</span>
+    <span class="hint">undo:CTRL+z | redo:CTRL+y | download:CTRL+s</span>
     <div id="canvas" class="mycanvas">
         <canvas id="scratch_pad_canvas"></canvas>
     </div>
@@ -67,6 +68,12 @@
         <a href='#scratch_pad_canvas' data-size='3' style='background:#00CC99;padding:3px;border-radius: 50%;'></a>
     </div>
     <div class="tools">
+        <a href='#scratch_pad_canvas' data-draw-tool='pen' style='border: none;padding: 1px 8px;'>pen</a>
+        <a href='#scratch_pad_canvas' data-draw-tool='rect' style='border: none;padding: 1px 8px;'>rect</a>
+        <a href='#scratch_pad_canvas' data-draw-tool='circle' style='border: none;padding: 1px 8px;'>circle</a>
+        <a href='#scratch_pad_canvas' data-draw-tool='line' style='border: none;padding: 1px 8px;'>line</a>
+    </div>
+    <div class="tools">
         <a href='#scratch_pad_canvas' data-tool='download' style='border: none;padding: 1px 8px;'>download</a>
         <a href='#scratch_pad_canvas' data-tool='undo' style='border: none;padding: 1px 8px;'>undo</a>
         <a href='#scratch_pad_canvas' data-tool='redo' style='border: none;padding: 1px 8px;'>redo</a>
@@ -82,49 +89,142 @@
         canvas.width = parseInt(mycanvas_style.getPropertyValue('width'));
         canvas.height = parseInt(mycanvas_style.getPropertyValue('height'));
 
-        var canData = [];
-        var canDataCount = 0;
-        var mouse = {x:0, y:0};
-        var size = 3;
-        var lineJoin = 'round';
-        var lineCap = 'round';
-        var color = '#00CC99';
-        var paintArray = [];
-        var undoData;
-        var oldData;
+        var canData = [], 
+            canDataCount = 0, 
+            mouse = {x1:0, y1:0, x0:0, y0:0}, 
+            size = 3, 
+            lineJoin = 'round', 
+            lineCap = 'round', 
+            color = '#00CC99', 
+            paintArray = [], 
+            undoData = [],
+            oldData = [],
+            drawingTool = 'pen';
 
         canvas.addEventListener('mousemove', function(e){
-            mouse.x = e.pageX - $('canvas').offset().left;
-            mouse.y = e.pageY - $('canvas').offset().top;
+            mouse.x1 = e.pageX - $('canvas').offset().left;
+            mouse.y1 = e.pageY - $('canvas').offset().top;
         }, false);
 
         canvas.addEventListener('mousedown', function(e) {
-            ctx.beginPath();
-            ctx.moveTo(mouse.x, mouse.y);
             paintArray = [];
+
+            if(drawingTool == 'pen') {
+                ctx.beginPath();
+                ctx.moveTo(mouse.x1, mouse.y1);
+            } else if(drawingTool == 'rect' || drawingTool == 'circle' || drawingTool == 'line') {
+                mouse.x0 = e.pageX - $('canvas').offset().left;
+                mouse.y0 = e.pageY - $('canvas').offset().top;
+            }
             canvas.addEventListener('mousemove', paint, false);
         }, false);
 
         canvas.addEventListener('mouseup', function(e) {
             canvas.removeEventListener('mousemove', paint, false);
+
+            if(drawingTool == 'rect' || drawingTool == 'circle' || drawingTool == 'line') {
+                paintArray.push({x: mouse.x1, y: mouse.y1, x0: mouse.x0, y0: mouse.y0, size: size, color:color, drawingTool:drawingTool});
+            }
             canData[canDataCount] = paintArray;
             undoData = canData;
             oldData = canData;
             canDataCount++;
+            console.log(canData);
         }, false);
 
-        var paint = function() {
+        var paint = (function() {
+
+            if(drawingTool == 'pen') {
+                paint_with_pen();
+                paintArray.push({x: mouse.x1, y: mouse.y1, x0: mouse.x0, y0: mouse.y0, size: size, color:color, drawingTool:drawingTool});
+            } else if(drawingTool == 'rect') {
+                paint_with_rect();
+            } else if(drawingTool == 'circle') {
+                paint_with_circle();
+            } else if(drawingTool == 'line') {
+                paint_with_line();
+            }
+        });
+
+        var paint_with_pen = (function(){
+            drawPen(mouse.x1, mouse.y1, size, color);
+        });
+
+        var paint_with_rect = (function(){
+            restore();
+            drawRect(mouse.x0, mouse.y0, mouse.x1, mouse.y1, size, color);
+        });
+
+        var paint_with_circle = (function(){
+            restore();
+            drawEllipse(mouse.x0, mouse.y0, mouse.x1, mouse.y1, size, color);
+        });
+
+        var paint_with_line = (function(){
+            restore();
+            drawLine(mouse.x0, mouse.y0, mouse.x1, mouse.y1, size, color);
+        });
+
+        var drawPen = (function(x1, y1, size, color){
             ctx.lineWidth = size;
             ctx.lineJoin = lineJoin;
             ctx.lineCap = lineCap;
             ctx.strokeStyle = color;
-
-            ctx.lineTo(mouse.x, mouse.y);
-            paintArray.push({x: mouse.x, y: mouse.y, size: size, color:color});
+            ctx.lineTo(x1, y1);
             ctx.stroke();
-        };
+        });
 
-        var download = function() {
+        var drawRect = (function(x1, y1, x2, y2, size, color){
+            var x = Math.min(x2,  x1),
+                y = Math.min(y2,  y1),
+                w = Math.abs(x2 - x1),
+                h = Math.abs(y2 - y1);
+
+            ctx.lineWidth = size;
+            ctx.lineJoin = lineJoin;
+            ctx.lineCap = lineCap;
+            ctx.strokeStyle = color;
+            ctx.strokeRect(x, y, w, h);
+        });
+
+        var drawLine = (function(x1, y1, x2, y2, size, color){
+            ctx.beginPath();
+            ctx.lineWidth = size;
+            ctx.lineJoin = lineJoin;
+            ctx.lineCap = lineCap;
+            ctx.strokeStyle = color;
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        });
+
+        var drawEllipse = (function (x1, y1, x2, y2, size, color) {
+            var radiusX = (x2 - x1) * 0.5,
+                radiusY = (y2 - y1) * 0.5,
+                centerX = x1 + radiusX,
+                centerY = y1 + radiusY,
+                step = 0.01,
+                a = step,
+                pi2 = Math.PI * 2 - step;
+            
+            ctx.beginPath();
+            ctx.lineWidth = size;
+            ctx.lineJoin = lineJoin;
+            ctx.lineCap = lineCap;
+            ctx.strokeStyle = color;
+            ctx.moveTo(centerX + radiusX * Math.cos(0),
+                       centerY + radiusY * Math.sin(0));
+
+            for(; a < pi2; a += step) {
+                ctx.lineTo(centerX + radiusX * Math.cos(a),
+                           centerY + radiusY * Math.sin(a));
+            }
+            
+            ctx.closePath();
+            ctx.stroke();
+        });
+
+        var download = (function() {
             var mime,format;
             format || (format = "png");
             if (format === "jpg") {
@@ -132,10 +232,10 @@
             }
             mime = "image/" + format;
             return window.open(canvas.toDataURL(mime));
-        };
+        });
 
 
-        var undo = function() {
+        var undo = (function() {
             if(canData.length > 0) {
                 ctx.clearRect(0,0,canvas.width,canvas.height);
                 canData = canData.slice(0, -1);
@@ -144,50 +244,66 @@
 
                 for(var i=0;i<undoData.length;i++){
                     ctx.beginPath();
-                    ctx.lineJoin = lineJoin;
-                    ctx.lineCap = lineCap;
                     $.each(undoData[i], function(index,element) {
-                        ctx.lineWidth = element.size;
-                        ctx.strokeStyle = element.color;
-                        ctx.lineTo(element.x, element.y);
+                        restoreMe(element);
                     });
-                    ctx.stroke();
                 }
             }
-        };
+        });
 
-        var redo = function() {
+        var redo = (function() {
             if(oldData.length > canData.length) {
                 var _canDataLength = canData.length;
                 var _oldData = oldData[_canDataLength];
 
                 ctx.beginPath();
-                ctx.lineJoin = lineJoin;
-                ctx.lineCap = lineCap;
                 $.each(_oldData, function(index,element) {
-                    ctx.lineWidth = element.size;
-                    ctx.strokeStyle = element.color;
-                    ctx.lineTo(element.x, element.y);
+                    restoreMe(element);
                 });
-                ctx.stroke();
 
                 canData[canDataCount] = _oldData;
                 undoData = canData;
                 canDataCount++;
             }
-        };
+        });
 
-        var clean = function() {
+        var clean = (function() {
             ctx.clearRect(0,0,canvas.width,canvas.height);
             canDataCount = 0;
             canData = [];
             undoData = canData;
-        };
+            oldData = canData;
+        });
+
+        var restore = (function(){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            if(canData.length > 0) {
+                for(var i=0;i<canData.length;i++){
+                    ctx.beginPath();
+                    $.each(canData[i], function(index,element) {
+                        restoreMe(element);
+                    });
+                    
+                }
+            }
+        });
+
+        var restoreMe = (function(element){
+            if(element.drawingTool == 'pen') {
+                drawPen(element.x, element.y, element.size, element.color);
+            } else if(element.drawingTool == 'rect') {
+                drawRect(element.x0, element.y0, element.x, element.y, element.size, element.color);
+            } else if(element.drawingTool == 'circle') {
+                drawEllipse(element.x0, element.y0, element.x, element.y, element.size, element.color);
+            } else if(element.drawingTool == 'line') {
+                drawLine(element.x0, element.y0, element.x, element.y, element.size, element.color);
+            }
+        })
 
         $('body').delegate("a[href=\"#" + ($('canvas').attr('id')) + "\"]", 'click', function(e) {
-            event.preventDefault();
+            e.preventDefault();
             $this = $(this);
-            _ref = ['color', 'size', 'tool'];
+            _ref = ['color', 'size', 'tool', 'draw-tool'];
             for (_i = 0, _len = _ref.length; _i < _len; _i++) {
                 key = _ref[_i];
                 if ($this.attr("data-" + key)) {
@@ -195,6 +311,9 @@
                     else if(key == 'color') {
                         color = $(this).attr("data-" + key);
                         $('[data-size]').css({'background':color});
+                    } else if(key == 'draw-tool') {
+                        drawingTool = $(this).attr("data-" + key);
+                        console.log(drawingTool);
                     } else if(key == 'tool') {
                         if($(this).attr("data-" + key) == 'download')  download();
                         else if($(this).attr("data-" + key) == 'undo')  undo();
