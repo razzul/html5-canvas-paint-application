@@ -1,79 +1,338 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Canvas</title>
+    <title>html5-canvas-paint-application</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            text-align: center;
-        }
-        canvas {
-            margin: 48px;
-            box-shadow: 1px 1px 50px 1px #000;
-        }
+    body {
+        padding: 0;
+        margin: 0;
+    }
+    .hint {
+        text-align: center;
+        width: 100%;
+        display: block;
+    }
+    #canvas {
+        width: 50%;
+        height: 300px;
+        margin: 75px auto;
+        cursor: crosshair;
+        border: 1px dashed #f56;
+        background: url(blueprint-dark.png);
+    }
+    .tools {
+        width: 50%;
+        margin: 20px auto;
+        text-align: center;
+    }
+    .tools a {
+        border: 1px solid black;
+        line-height: 30px;
+        padding:10px;
+        vertical-align: middle;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        color: black;
+        font-weight: bold;
+    }
     </style>
 </head>
 <body>
-    <canvas></canvas>
+    <span class="hint">undo:CTRL+z | redo:CTRL+y | download:CTRL+s</span>
+    <div id="canvas" class="mycanvas">
+        <canvas id="scratch_pad_canvas"></canvas>
+    </div>
+    <div class="tools">
+        <a href='#scratch_pad_canvas' data-color='#F44336' style='background:#F44336;'></a>
+        <a href='#scratch_pad_canvas' data-color='#9C27B0' style='background:#9C27B0;'></a>
+        <a href='#scratch_pad_canvas' data-color='#673AB7' style='background:#673AB7;'></a>
+        <a href='#scratch_pad_canvas' data-color='#2196F3' style='background:#2196F3;'></a>
+        <a href='#scratch_pad_canvas' data-color='#00BCD4' style='background:#00BCD4;'></a>
+        <a href='#scratch_pad_canvas' data-color='#8BC34A' style='background:#8BC34A;'></a>
+        <a href='#scratch_pad_canvas' data-color='#000000' style='background:#000000;'></a>
+        <a href='#scratch_pad_canvas' data-color='#00CC99' style='background:#00CC99;'></a>
+        <a href='#scratch_pad_canvas' data-color='#f56' style='background:#f56;'></a>
+        <a href='#scratch_pad_canvas' data-color='#CDDC39' style='background:#CDDC39;'></a>
+        <a href='#scratch_pad_canvas' data-color='#FFEB3B' style='background:#FFEB3B;'></a>
+        <a href='#scratch_pad_canvas' data-color='#FFC107' style='background:#FFC107;'></a>
+    </div>
+    <div class="tools">
+        <a href='#scratch_pad_canvas' data-size='3' style='background:#00CC99;padding:3px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='5' style='background:#00CC99;padding:5px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='10' style='background:#00CC99;padding:10px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='15' style='background:#00CC99;padding:15px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='10' style='background:#00CC99;padding:10px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='5' style='background:#00CC99;padding:5px;border-radius: 50%;'></a>
+        <a href='#scratch_pad_canvas' data-size='3' style='background:#00CC99;padding:3px;border-radius: 50%;'></a>
+    </div>
+    <div class="tools">
+        <a href='#scratch_pad_canvas' data-draw-tool='pen' style='border: none;padding: 1px 8px;'>pen</a>
+        <a href='#scratch_pad_canvas' data-draw-tool='rect' style='border: none;padding: 1px 8px;'>rect</a>
+        <a href='#scratch_pad_canvas' data-draw-tool='circle' style='border: none;padding: 1px 8px;'>circle</a>
+        <a href='#scratch_pad_canvas' data-draw-tool='line' style='border: none;padding: 1px 8px;'>line</a>
+    </div>
+    <div class="tools">
+        <a href='#scratch_pad_canvas' data-tool='download' style='border: none;padding: 1px 8px;'>download</a>
+        <a href='#scratch_pad_canvas' data-tool='undo' style='border: none;padding: 1px 8px;'>undo</a>
+        <a href='#scratch_pad_canvas' data-tool='redo' style='border: none;padding: 1px 8px;'>redo</a>
+        <a href='#scratch_pad_canvas' data-tool='clean' style='border: none;padding: 1px 8px;'>clean</a>
+    </div>
+    <script   src="https://code.jquery.com/jquery-1.12.3.min.js"   integrity="sha256-aaODHAgvwQW1bFOGXMeX+pC4PZIPsvn2h1sArYOhgXQ="   crossorigin="anonymous"></script>
     <script>
-        console.log('Canvas');
+        var mycanvas = document.getElementById('canvas');
+        var mycanvas_style = getComputedStyle(mycanvas);
 
-        var canvas = document.querySelector('canvas');
+        var canvas = document.getElementById('scratch_pad_canvas');
         var ctx = canvas.getContext('2d');
-        var resize = function () {
-            canvas.width = 400;
-            canvas.height = 400;
-        };
-        var cube = {width: 10, height: 10};
-        var speed = 1000;
+        canvas.width = parseInt(mycanvas_style.getPropertyValue('width'));
+        canvas.height = parseInt(mycanvas_style.getPropertyValue('height'));
 
-        var pos, vel;
+        var canData = [], 
+            canDataCount = 0, 
+            mouse = {x1:0, y1:0, x0:0, y0:0}, 
+            size = 3, 
+            lineJoin = 'round', 
+            lineCap = 'round', 
+            color = '#00CC99', 
+            paintArray = [], 
+            undoData = [],
+            oldData = [],
+            drawingTool = 'pen';
 
-        var clear = function () {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        canvas.addEventListener('mousemove', function(e){
+            mouse.x1 = e.pageX - $('canvas').offset().left;
+            mouse.y1 = e.pageY - $('canvas').offset().top;
+        }, false);
+
+        canvas.addEventListener('mousedown', function(e) {
+            paintArray = [];
+
+            if(drawingTool == 'pen') {
+                ctx.beginPath();
+                ctx.moveTo(mouse.x1, mouse.y1);
+            } else if(drawingTool == 'rect' || drawingTool == 'circle' || drawingTool == 'line') {
+                mouse.x0 = e.pageX - $('canvas').offset().left;
+                mouse.y0 = e.pageY - $('canvas').offset().top;
+            }
+            canvas.addEventListener('mousemove', paint, false);
+        }, false);
+
+        canvas.addEventListener('mouseup', function(e) {
+            canvas.removeEventListener('mousemove', paint, false);
+
+            if(drawingTool == 'rect' || drawingTool == 'circle' || drawingTool == 'line') {
+                paintArray.push({x: mouse.x1, y: mouse.y1, x0: mouse.x0, y0: mouse.y0, size: size, color:color, drawingTool:drawingTool});
+            }
+            canData[canDataCount] = paintArray;
+            undoData = canData;
+            oldData = canData;
+            canDataCount++;
+            console.log(canData);
+        }, false);
+
+        var paint = (function() {
+
+            if(drawingTool == 'pen') {
+                paint_with_pen();
+                paintArray.push({x: mouse.x1, y: mouse.y1, x0: mouse.x0, y0: mouse.y0, size: size, color:color, drawingTool:drawingTool});
+            } else if(drawingTool == 'rect') {
+                paint_with_rect();
+            } else if(drawingTool == 'circle') {
+                paint_with_circle();
+            } else if(drawingTool == 'line') {
+                paint_with_line();
+            }
+        });
+
+        var paint_with_pen = (function(){
+            drawPen(mouse.x1, mouse.y1, size, color);
+        });
+
+        var paint_with_rect = (function(){
+            restore();
+            drawRect(mouse.x0, mouse.y0, mouse.x1, mouse.y1, size, color);
+        });
+
+        var paint_with_circle = (function(){
+            restore();
+            drawEllipse(mouse.x0, mouse.y0, mouse.x1, mouse.y1, size, color);
+        });
+
+        var paint_with_line = (function(){
+            restore();
+            drawLine(mouse.x0, mouse.y0, mouse.x1, mouse.y1, size, color);
+        });
+
+        var drawPen = (function(x1, y1, size, color){
+            ctx.lineWidth = size;
+            ctx.lineJoin = lineJoin;
+            ctx.lineCap = lineCap;
+            ctx.strokeStyle = color;
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+        });
+
+        var drawRect = (function(x1, y1, x2, y2, size, color){
+            var x = Math.min(x2,  x1),
+                y = Math.min(y2,  y1),
+                w = Math.abs(x2 - x1),
+                h = Math.abs(y2 - y1);
+
+            ctx.lineWidth = size;
+            ctx.lineJoin = lineJoin;
+            ctx.lineCap = lineCap;
+            ctx.strokeStyle = color;
+            ctx.strokeRect(x, y, w, h);
+        });
+
+        var drawLine = (function(x1, y1, x2, y2, size, color){
+            ctx.beginPath();
+            ctx.lineWidth = size;
+            ctx.lineJoin = lineJoin;
+            ctx.lineCap = lineCap;
+            ctx.strokeStyle = color;
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+        });
+
+        var drawEllipse = (function (x1, y1, x2, y2, size, color) {
+            var radiusX = (x2 - x1) * 0.5,
+                radiusY = (y2 - y1) * 0.5,
+                centerX = x1 + radiusX,
+                centerY = y1 + radiusY,
+                step = 0.01,
+                a = step,
+                pi2 = Math.PI * 2 - step;
+            
+            ctx.beginPath();
+            ctx.lineWidth = size;
+            ctx.lineJoin = lineJoin;
+            ctx.lineCap = lineCap;
+            ctx.strokeStyle = color;
+            ctx.moveTo(centerX + radiusX * Math.cos(0),
+                       centerY + radiusY * Math.sin(0));
+
+            for(; a < pi2; a += step) {
+                ctx.lineTo(centerX + radiusX * Math.cos(a),
+                           centerY + radiusY * Math.sin(a));
+            }
+            
+            ctx.closePath();
+            ctx.stroke();
+        });
+
+        var download = (function() {
+            var mime,format;
+            format || (format = "png");
+            if (format === "jpg") {
+                format = "jpeg";
+            }
+            mime = "image/" + format;
+            return window.open(canvas.toDataURL(mime));
+        });
+
+
+        var undo = (function() {
+            if(canData.length > 0) {
+                ctx.clearRect(0,0,canvas.width,canvas.height);
+                canData = canData.slice(0, -1);
+                undoData = undoData.slice(0, -1);
+                canDataCount--;
+
+                for(var i=0;i<undoData.length;i++){
+                    ctx.beginPath();
+                    $.each(undoData[i], function(index,element) {
+                        restoreMe(element);
+                    });
+                }
+            }
+        });
+
+        var redo = (function() {
+            if(oldData.length > canData.length) {
+                var _canDataLength = canData.length;
+                var _oldData = oldData[_canDataLength];
+
+                ctx.beginPath();
+                $.each(_oldData, function(index,element) {
+                    restoreMe(element);
+                });
+
+                canData[canDataCount] = _oldData;
+                undoData = canData;
+                canDataCount++;
+            }
+        });
+
+        var clean = (function() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            canDataCount = 0;
+            canData = [];
+            undoData = canData;
+            oldData = canData;
+        });
+
+        var restore = (function(){
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            if(canData.length > 0) {
+                for(var i=0;i<canData.length;i++){
+                    ctx.beginPath();
+                    $.each(canData[i], function(index,element) {
+                        restoreMe(element);
+                    });
+                    
+                }
+            }
+        });
+
+        var restoreMe = (function(element){
+            if(element.drawingTool == 'pen') {
+                drawPen(element.x, element.y, element.size, element.color);
+            } else if(element.drawingTool == 'rect') {
+                drawRect(element.x0, element.y0, element.x, element.y, element.size, element.color);
+            } else if(element.drawingTool == 'circle') {
+                drawEllipse(element.x0, element.y0, element.x, element.y, element.size, element.color);
+            } else if(element.drawingTool == 'line') {
+                drawLine(element.x0, element.y0, element.x, element.y, element.size, element.color);
+            }
+        })
+
+        $('body').delegate("a[href=\"#" + ($('canvas').attr('id')) + "\"]", 'click', function(e) {
+            e.preventDefault();
+            $this = $(this);
+            _ref = ['color', 'size', 'tool', 'draw-tool'];
+            for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+                key = _ref[_i];
+                if ($this.attr("data-" + key)) {
+                    if(key == 'size') size = $(this).attr("data-" + key);
+                    else if(key == 'color') {
+                        color = $(this).attr("data-" + key);
+                        $('[data-size]').css({'background':color});
+                    } else if(key == 'draw-tool') {
+                        drawingTool = $(this).attr("data-" + key);
+                        console.log(drawingTool);
+                    } else if(key == 'tool') {
+                        if($(this).attr("data-" + key) == 'download')  download();
+                        else if($(this).attr("data-" + key) == 'undo')  undo();
+                        else if($(this).attr("data-" + key) == 'redo')  redo();
+                        else if($(this).attr("data-" + key) == 'clean')  clean();
+                    }
+                }
+            }
+        });
+
+        function KeyPress(e) {
+            var evtobj = window.event? event : e;
+            if (evtobj.keyCode == 90 && evtobj.ctrlKey) undo();
+            if (evtobj.keyCode == 89 && evtobj.ctrlKey) redo();
+            if (evtobj.keyCode == 83 && evtobj.ctrlKey) download();
+            if (evtobj.keyCode == 46) clean();
         }
 
-        var loop = function () {
-            clear();
-
-            pos.x += vel.x;
-            pos.y += vel.y;
-
-            if (pos.x < 0 || pos.x > canvas.width/2) {
-                vel.x *= -1;
-            }
-
-            if (pos.y < 0 || pos.y > canvas.height/2) {
-                vel.y *= -1;
-            }
-
-
-            ctx.fillRect(cube.width + pos.x, cube.height + pos.y, cube.width, cube.height);
-            ctx.fillRect(canvas.width - cube.width - pos.x, canvas.height - cube.height - pos.y, cube.width, cube.height);
-            ctx.fillRect(cube.width + pos.x, canvas.height - cube.height - pos.y, cube.width, cube.height);
-            ctx.fillRect(canvas.width - cube.width - pos.x, cube.height + pos.y, cube.width, cube.height);
-            ctx.fillRect(cube.width + pos.x, canvas.height/2 - pos.y, cube.width, cube.height);
-            ctx.fillRect(cube.width + pos.x, canvas.height/2 + pos.y, cube.width, cube.height);
-            ctx.fillRect(canvas.width/2 - pos.x, cube.height + pos.y, cube.width, cube.height);
-            ctx.fillRect(canvas.width/2 + pos.x, cube.height + pos.y, cube.width, cube.height);
-            ctx.fillRect(canvas.width - cube.width - pos.x, canvas.height/2 - cube.height - pos.y, cube.width, cube.height);
-            ctx.fillRect(canvas.width - cube.width - pos.x, canvas.height/2 - cube.height + pos.y, cube.width, cube.height);
-            ctx.fillRect(canvas.width/2 - cube.width - pos.x, canvas.height - cube.height - pos.y, cube.width, cube.height);
-            ctx.fillRect(canvas.width/2 - cube.width + pos.x, canvas.height - cube.height - pos.y, cube.width, cube.height);
-
-
-            
-            //console.log(pos.x + ", " + pos.y);
-        };
-
-        window.addEventListener('resize', resize);
-        window.addEventListener('load', function() {
-            resize();
-            pos = {x: 10, y: 10};
-            vel = {x:  1, y:  1};
-            setInterval(loop, speed / 60);
-        });
-        </script>
-    </body>
+        document.onkeydown = KeyPress;
+    </script>
+</body>
 </html>
