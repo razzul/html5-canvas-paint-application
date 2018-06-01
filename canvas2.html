@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Canvas</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+        canvas {
+            margin: 48px;
+            box-shadow: 1px 1px 50px 1px #000;
+        }
+    </style>
+</head>
+<body>
+    <canvas></canvas>
+    <script>
+        console.log('Canvas');
+
+        var canvas = document.querySelector('canvas');
+        var ctx = canvas.getContext('2d');
+        var resize = function () {
+            canvas.width = 400;
+            canvas.height = 400;
+        };
+        var cube = {width: 10, height: 10};
+        var speed = 1000;
+
+        var pos, vel;
+
+        var clear = function () {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        var loop = function () {
+            clear();
+
+            pos.x += vel.x;
+            pos.y += vel.y;
+
+            if (pos.x < 0 || pos.x > canvas.width/2) {
+                vel.x *= -1;
+            }
+
+            if (pos.y < 0 || pos.y > canvas.height/2) {
+                vel.y *= -1;
+            }
+
+
+            ctx.fillRect(cube.width + pos.x, cube.height + pos.y, cube.width, cube.height);
+            ctx.fillRect(canvas.width - cube.width - pos.x, canvas.height - cube.height - pos.y, cube.width, cube.height);
+            ctx.fillRect(cube.width + pos.x, canvas.height - cube.height - pos.y, cube.width, cube.height);
+            ctx.fillRect(canvas.width - cube.width - pos.x, cube.height + pos.y, cube.width, cube.height);
+            ctx.fillRect(cube.width + pos.x, canvas.height/2 - pos.y, cube.width, cube.height);
+            ctx.fillRect(cube.width + pos.x, canvas.height/2 + pos.y, cube.width, cube.height);
+            ctx.fillRect(canvas.width/2 - pos.x, cube.height + pos.y, cube.width, cube.height);
+            ctx.fillRect(canvas.width/2 + pos.x, cube.height + pos.y, cube.width, cube.height);
+            ctx.fillRect(canvas.width - cube.width - pos.x, canvas.height/2 - cube.height - pos.y, cube.width, cube.height);
+            ctx.fillRect(canvas.width - cube.width - pos.x, canvas.height/2 - cube.height + pos.y, cube.width, cube.height);
+            ctx.fillRect(canvas.width/2 - cube.width - pos.x, canvas.height - cube.height - pos.y, cube.width, cube.height);
+            ctx.fillRect(canvas.width/2 - cube.width + pos.x, canvas.height - cube.height - pos.y, cube.width, cube.height);
+
+
+            
+            //console.log(pos.x + ", " + pos.y);
+        };
+
+        window.addEventListener('resize', resize);
+        window.addEventListener('load', function() {
+            resize();
+            pos = {x: 10, y: 10};
+            vel = {x:  1, y:  1};
+            setInterval(loop, speed / 60);
+        });
+        </script>
+    </body>
+</html>
